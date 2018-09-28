@@ -1,0 +1,607 @@
+<?php
+/**
+ * @file
+ * Bootstrap sub-theme.
+ */
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function gobear_preprocess_html(&$variables) {
+  $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
+  $variables['language'] = $language;
+  $node = \Drupal::request()->attributes->get('node');
+
+  if ($node && method_exists($node, 'id')) {
+    $variables['attributes']['class'][] = 'page-node-' . $node->id();
+  }
+
+  if ($node && $node->getType() == "lite_product") {
+    if (!empty($node->field_hero_banner->target_id)) {
+       $hero_banner = \Drupal\paragraphs\Entity\Paragraph::load($node->field_hero_banner->target_id);
+       $content_items = $hero_banner->xeno_content->getValue();
+       foreach ($content_items as $item) {
+           $banner_content = \Drupal\paragraphs\Entity\Paragraph::load($item['target_id']);
+           if ($banner_content->getType() == "sub_nav_menu") {
+              $sticky = $banner_content->get('field_sticky')->value;
+              if ($sticky == 1) {
+                $variables['attributes']['class'][] = 'lite-product-sticky';
+              }
+              $variables['attributes']['class'][] = 'lite-product-with-subnav';
+
+           }
+       }
+    }
+  }
+
+  if (\Drupal::routeMatch()->getRouteName() == 'entity.taxonomy_term.canonical') {
+    $term_id = \Drupal::routeMatch()->getRawParameter('taxonomy_term');
+    $db = \Drupal\Core\Database\Database::getConnection();
+    $vid = $db->select('taxonomy_term_data', 't')
+      ->fields('t', array('vid'))
+      ->condition('t.tid', $term_id,'=')
+      ->execute()
+      ->fetchField();
+    $vid = str_replace('_', '-', $vid);
+    $variables['attributes']['class'][] = 'page-taxonomy-' . $vid;
+    $variables['#attached']['library'][] = 'gobear/authentication'; // Used vendor.js
+  }
+
+  // Add country specific class wrapper.
+  $url = $_SERVER['REQUEST_URI'];
+  $parts = explode('/', $url);
+  $country_code = $parts[1];
+  $variables['attributes']['class'][] = 'country-' . $country_code;
+
+}
+
+/**
+ * Implements of hook_preprocess_page().
+ */
+function gobear_preprocess_page(&$variables) {
+  $module_handler = \Drupal::service('module_handler');
+
+  $filesLoc = getenv('FILES_LOCATION');
+  $node = \Drupal::routeMatch()->getParameter('node');
+  $current_path = \Drupal::service('path.current')->getPath();
+  $url = $_SERVER['REQUEST_URI'];
+  $parts = explode('/', $url);
+
+  $country_code = $parts[1];
+  $tier_one_url = array_values(array_slice($parts, -1))[0];
+  $statics = array('careers', 'feedback', 'about', 'blog', 'newsroom', 'support', 'content-hub', 'terms-and-conditions', 'privacy-policy');
+
+  // Toggle for new My Account on SG.
+  $new_my_acct_toggle_sg = TRUE;
+
+  // Toggle for new My Account on TH.
+  $new_my_acct_toggle_th = TRUE;
+
+  // Toggle for new My Account on ID.
+  $new_my_acct_toggle_id = TRUE;
+
+  /**
+   * @todo: NEED TO OPTIMIZE ON NEXT SPRINT
+   */
+
+  /**
+   * Config. based per country-specific, and by different content types.
+   */
+  // Thailand.
+  if ($country_code == 'th') {
+    if ($new_my_acct_toggle_th == TRUE) {
+      $variables['#attached']['library'][] = 'gobear/th-myaccount-widget';
+    }
+
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/thailand/files/i18n.json"));
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/th-results-v2-styling';
+
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/th-fixed-deposits-styling';
+
+      } else {
+        // My Account pages for TH.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'th') {
+            if ($new_my_acct_toggle_th == TRUE) {
+              $variables['#attached']['library'][] = 'gobear/th-myaccount';
+
+            }
+            else {
+              $variables['#attached']['library'][] = 'gobear/th-myaccount-old';
+
+            }
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/th-styling';
+        }
+      }
+    } else {
+      $variables['#attached']['library'][] = 'gobear/th-styling';
+    }
+
+    // Indonesia.
+  } else if ($country_code == 'id') {
+    if ($new_my_acct_toggle_id == TRUE) {
+      $variables['#attached']['library'][] = 'gobear/id-myaccount-widget';
+    }
+
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/indonesia/files/i18n.json"));
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/id-results-v2-styling';
+
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/id-fixed-deposits-styling';
+
+      } else {
+        // My Account pages for ID.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'id') {
+            if ($new_my_acct_toggle_id == TRUE) {
+              $variables['#attached']['library'][] = 'gobear/id-myaccount';
+
+            }
+            else {
+              $variables['#attached']['library'][] = 'gobear/id-myaccount-old';
+
+            }
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/id-styling';
+        }
+      }
+    } else {
+      $variables['#attached']['library'][] = 'gobear/id-styling';
+    }
+
+    // Vietnam.
+  } else if ($country_code == 'vn') {
+    $variables['#attached']['library'][] = 'gobear/vn-myaccount-widget';
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/vietnam/files/i18n.json"));
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/vn-results-v2-styling';
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/vn-fixed-deposits-styling';
+      } else {
+        // My Account pages for VN.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'vn') {
+            $variables['#attached']['library'][] = 'gobear/vn-myaccount';
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/vn-styling';
+        }
+      }
+    } else {
+      $variables['#attached']['library'][] = 'gobear/vn-styling';
+    }
+
+    // Hong Kong.
+  } else if ($country_code == 'hk') {
+    $variables['#attached']['library'][] = 'gobear/hk-myaccount-widget';
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/hongkong/files/i18n.json"));
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/hk-results-v2-styling';
+
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/hk-fixed-deposits-styling';
+
+      } else {
+        // My Account pages for HK.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'hk') {
+            $variables['#attached']['library'][] = 'gobear/hk-myaccount';
+
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/hk-styling';
+
+        }
+      }
+    } else {
+      $variables['#attached']['library'][] = 'gobear/hk-styling';
+
+    }
+
+    // Malaysia.
+  } else if ($country_code == 'my') {
+    $variables['#attached']['library'][] = 'gobear/my-myaccount-widget';
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/malaysia/files/i18n.json"));
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/my-results-v2-styling';
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/my-fixed-deposits-styling';
+      } else {
+        // My Account pages for MY.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'my') {
+            $variables['#attached']['library'][] = 'gobear/my-myaccount';
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/my-styling';
+        }
+      }
+    } else {
+      $variables['#attached']['library'][] = 'gobear/my-styling';
+    }
+
+    // Philippines.
+  } else if ($country_code == 'ph') {
+    $variables['#attached']['library'][] = 'gobear/ph-myaccount-widget';
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/philippines/files/i18n.json"));
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/ph-results-v2-styling';
+
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/ph-fixed-deposits-styling';
+
+      } else {
+        // My Account pages for PH.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'ph') {
+            $variables['#attached']['library'][] = 'gobear/ph-myaccount';
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/ph-styling';
+        }
+      }
+    } else {
+      $variables['#attached']['library'][] = 'gobear/ph-styling';
+    }
+
+    // Singapore.
+  } else {
+
+    // JS and CSS configuration for SG.
+    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/singapore/files/i18n.json"));
+    $variables['#attached']['library'][] = 'gobear/gobearhm_script';
+    if ($new_my_acct_toggle_sg == TRUE) {
+      $variables['#attached']['library'][] = 'gobear/sg-myaccount-widget';
+    }
+
+    if ($node && method_exists($node, 'bundle')) {
+      $node_type = $node->bundle();
+
+      if ($node_type == 'result_page_v2') {
+        $variables['#attached']['library'][] = 'gobear/sg-results-v2-styling';
+
+      } else if ($node_type == 'fixed_deposits') {
+        $variables['#attached']['library'][] = 'gobear/sg-fixed-deposits-styling';
+
+      } else {
+        // My Account pages for SG.
+        if ($node_type == 'myaccount') {
+          if ($country_code == 'sg') {
+            if ($new_my_acct_toggle_sg == TRUE) {
+              $variables['#attached']['library'][] = 'gobear/sg-myaccount';
+            }
+            else {
+              $variables['#attached']['library'][] = 'gobear/sg-myaccount-old';
+            }
+          }
+        }
+        else {
+          $variables['#attached']['library'][] = 'gobear/sg-styling';
+        }
+      }
+
+      if ($node_type == 'travel') {
+        $variables['#attached']['library'][] = 'gobear/sg-travel';
+      }
+
+    } else {
+      $variables['#attached']['library'][] = 'gobear/sg-styling';
+    }
+  }
+
+  /**
+   * Config. based per country-specific only.
+   */
+  if ($country_code) {
+    $variables['#attached']['library'][] = 'gobear/'.$country_code.'-adrum-header';
+  } else {
+    $variables['#attached']['library'][] = 'gobear/sg-adrum-header';
+  }
+
+  /**
+   * Config. based on certain path/URL.
+   */
+  if ($current_path == "/webform/lead_form") {
+    $variables['#attached']['library'][] = 'gobear/cpl';
+  }
+
+  if ($current_path == "/insurance-guides" || $current_path == "/banking-guides" || $current_path == "/insurance-providers" || $current_path == "/banking-providers" || $current_path == "/providers") {
+    $variables['#attached']['library'][] = 'gobear/anchors';
+  }
+
+  if (in_array($tier_one_url, $statics)) {
+    $variables['#attached']['library'][] = 'gobear/authentication'; // Used vendor.js
+  }
+
+  if ($variables['is_front'] == 1) {
+    $variables['#attached']['library'][] = 'gobear/slider';
+  }
+
+  /**
+   * Config. based on certain content types, and some based on certain fields.
+   */
+  if ($node && method_exists($node, 'bundle')) {
+    $node_type = $node->bundle();
+
+    // @todo: Need to refactor.
+    if ($variables['is_front'] == 1 ||
+      $node_type == 'landingspages' ||
+      $node_type == 'campaign_page' ||
+      $node_type == 'content_hub' ||
+      $node_type == 'saving_account' ||
+      $node_type == 'lite_product' ||
+      $node_type == 'cpl' ||
+      $node_type == 'forwarding_page') {
+
+      if (!empty($country_code)) {
+        $variables['#attached']['library'][] = 'gobear/' . $country_code . '-vue';
+      } else {
+        $variables['#attached']['library'][] = 'gobear/sg-vue';
+      }
+    }
+
+    if ($node_type == 'landingspages' || 'campaign_page') {
+      if ($country_code == 'sg') {
+        $variables['#attached']['library'][] = 'gobear/sms_aware_links';
+      }
+    }
+
+    if ($node_type == 'content_hub_article') {
+       $variables['#attached']['library'][] = 'gobear/content-hub-article';
+    }
+
+
+    if ($node_type == 'blog') {
+      $variables['style'] = 'blog-column-' . $node->get('field_template_style')->value;
+      $variables['#attached']['library'][] = 'gobear/authentication'; // Used vendor.js
+
+      // Banner ad.
+      $variables['#attached']['library'][] = 'gobear/banner_ad';
+
+      // Addthis share.
+      if ($country_code == 'th') {
+        $variables['#attached']['library'][] = 'gobear/th-share';
+
+      } else {
+        $variables['#attached']['library'][] = 'gobear/global-share';
+
+      }
+    }
+
+    if ($node_type == 'job') {
+      $variables['#attached']['library'][] = 'gobear/share';
+    }
+
+    if ($node_type == 'article') {
+      $variables['style'] = 'news-column-' . $node->get('field_template_style')->value;
+    }
+
+    if ($node_type != 'result_page' && $node_type != 'result_page_v2') {
+      $variables['#attached']['library'][] = 'gobear/virtualview';
+      $variables['#attached']['library'][] = 'gobear/ga_bounce';
+    }
+
+    if ($node_type == 'result_page' || $node_type == 'product') {
+      if (!empty($country_code)) {
+        $variables['#attached']['library'][] = 'gobear/' . $country_code . '-results';
+      } else {
+        $variables['#attached']['library'][] = 'gobear/sg-results';
+      }
+    }
+
+    // Credit card landing pages.
+    if ($node_type == 'result_page_v2') {
+      if (!empty($country_code)) {
+        $variables['#attached']['library'][] = 'gobear/' . $country_code . '-results-v2';
+      } else {
+        $variables['#attached']['library'][] = 'gobear/sg-results-v2';
+      }
+    }
+
+    // Fixed deposit landing pages.
+    if ($node_type == 'fixed_deposits') {
+      if (!empty($country_code)) {
+        $variables['#attached']['library'][] = 'gobear/' . $country_code . '-fixed-deposits';
+      } else {
+        $variables['#attached']['library'][] = 'gobear/sg-fixed-deposits';
+      }
+    }
+
+    // Forwading landing pages.
+    if ($node_type == 'forwarding_page') {
+      $variables['#attached']['library'][] = 'gobear/forwarding-page';
+    }
+
+    // Safe place to implement Design pantry components, All is well.
+    if ($node_type == 'pantry') {
+      $variables['#attached']['library'][] = 'gobear/design-pantry';
+    }
+
+    if ($node->hasField('field_content_item')) {
+      $items = $node->field_content_item->getValue();
+      foreach ($items as $item) {
+        $paragraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($item['target_id']);
+
+        if ($paragraph && method_exists($paragraph, 'bundle')) {
+          if ($paragraph->bundle() == 'image_banner') {
+            $variables['#attached']['library'][] = 'gobear/slider';
+          }
+
+          if ($paragraph->bundle() == 'share_buttons') {
+            $variables['#attached']['library'][] = 'gobear/share';
+          }
+
+          if ($paragraph->bundle() == 'banner_ad') {
+            $variables['#attached']['library'][] = 'gobear/banner_ad';
+          }
+        }
+      }
+    }
+
+    if ($node->hasField('field_header')) {
+      $items = $node->field_header->getValue();
+      foreach ($items as $item) {
+        $paragraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($item['target_id']);
+
+        if ($paragraph && method_exists($paragraph, 'bundle')) {
+          if ($paragraph->bundle() == 'image_banner') {
+            $variables['#attached']['library'][] = 'gobear/slider';
+
+          }
+          if ($paragraph->bundle() == 'share_buttons') {
+            $variables['#attached']['library'][] = 'gobear/share';
+
+          }
+        }
+      }
+    }
+  }
+
+  // For Forwarding page.
+  if ($module_handler->moduleExists('gobear_fwd') && $current_path == '/carousell-forward') {
+    $unset_libs = [
+      'gobear/sg-myaccount-widget',
+      'gobear/sg-styling',
+      'gobear/sg-adrum-header',
+      'gobear/hk-myaccount-widget',
+      'gobear/hk-styling',
+      'gobear/hk-adrum-header',
+    ];
+
+    foreach ($variables['#attached']['library'] as $key => $value) {
+      if (in_array($value, $unset_libs)) {
+        unset($variables['#attached']['library'][$key]);
+      }
+    }
+
+    // Removed this line because we already created specific content type for FORWARDING PAGE where we can attach this style
+    // $variables['#attached']['library'][] = 'gobear/forwarding-page';
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_page_alter().
+ */
+function gobear_theme_suggestions_page_alter(array &$suggestions, array $variables) {
+  $node = \Drupal::routeMatch()->getParameter('node');
+
+  if ($node && method_exists($node, 'bundle')) {
+    $content_type = $node->bundle();
+    $suggestions[] = 'page__' . $content_type;
+
+    if ($node->type->entity->label() == 'Blog article') {
+      $suggestions[] = 'page__' . $content_type . '_article';
+    }
+  }
+
+  if (\Drupal::routeMatch()->getRouteName() == 'entity.taxonomy_term.canonical') {
+    $term_id = \Drupal::routeMatch()->getRawParameter('taxonomy_term');
+    $db = \Drupal\Core\Database\Database::getConnection();
+    $vid = $db->select('taxonomy_term_data', 't')
+      ->fields('t', array('vid'))
+      ->condition('t.tid', $term_id,'=')
+      ->execute()
+      ->fetchField();
+    $vid = str_replace('_', '__', $vid);
+    $suggestions[] = 'page__' . $vid;
+  }
+}
+
+/**
+ * Implements hook_preprocess_paragraph().
+ */
+function gobear_preprocess_paragraph(&$variables) {
+  $paragraph = $variables['elements']['#paragraph'];
+
+  if ($paragraph->hasField('field_padding')) {
+    $padding = $paragraph->get('field_padding')->value;
+    if (!empty($padding)) {
+      $variables['padding'] = $padding;
+    } else {
+      $variables['padding'] = 'paddingLarge';
+    }
+  }
+  if ($paragraph->hasField('field_announcement')) {
+    $variables['valignment'] = 'gb-announce';
+  } else {
+    $variables['valignment'] = 'gb-vertical';
+  }
+}
+
+/**
+ * Implements hook_preprocess_paragraph__slick_carousel().
+ */
+function gobear_preprocess_paragraph__slick_carousel(&$variables) {
+  $variables['#attached']['library'][] = 'gobear/slick_carousel';
+}
+
+/**
+ * Implements hook_preprocess_paragraph__hero_content_cta().
+ */
+function gobear_preprocess_paragraph__hero_content_cta(&$variables) {
+  $paragraph = $variables['paragraph'];
+  if ($paragraph->field_link->uri) {
+    $variables['cta_url'] = Drupal\Core\Url::fromUri($paragraph->field_link->uri)->toString();
+    $variables['cta_title'] = $paragraph->field_link->title;
+  }
+  $variables['cta_style'] = $paragraph->field_link_style->value;
+  $variables['cta_size'] = $paragraph->field_link_size->value;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function gobear_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  if($form['#webform_id'] == 'citibank_lead_form') {
+    $form['#theme'] = 'citibank_lead_form';
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function gobear_theme($existing, $type, $theme, $path) {
+  $info = [
+    'citibank_lead_form' => [
+      'render element' => 'form',
+      'path' => drupal_get_path('module', 'gobear'),
+    ],
+  ];
+  return $info;
+}
