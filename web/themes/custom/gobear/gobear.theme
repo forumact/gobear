@@ -284,7 +284,9 @@ function gobear_preprocess_page(&$variables) {
   } else {
 
     // JS and CSS configuration for SG.
-    $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/singapore/files/i18n.json"));
+	if(file_exists("$filesLoc/singapore/files/i18n.json")){
+	  $variables['#attached']['drupalSettings']['i18n'] = json_decode(file_get_contents("$filesLoc/singapore/files/i18n.json"));	
+	}    
     $variables['#attached']['library'][] = 'gobear/gobearhm_script';
     if ($new_my_acct_toggle_sg == TRUE) {
       $variables['#attached']['library'][] = 'gobear/sg-myaccount-widget';

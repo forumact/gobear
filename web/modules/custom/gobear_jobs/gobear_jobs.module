@@ -29,7 +29,13 @@ function gobear_jobs_help($route_name, RouteMatchInterface $route_match) {
 function gobear_jobs_theme() {
   return [
     'gobear_jobs' => [
-      'render element' => 'children',
+     'variables' => ['data' => NULL],
     ],
   ];
+}
+
+function gobear_jobs_page_attachments(array &$attachments) { 
+	if (\Drupal::routeMatch()->getRouteName() === 'gobear_jobs.gobearjobs_controller_JobListing') { 
+		$attachments['#attached']['library'][] = 'gobear_jobs/drupal.gobear_jobs';
+	}
 }

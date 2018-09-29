@@ -54,26 +54,19 @@ class GobearjobsController extends ControllerBase {
       // getBody() returns an instance of Psr\Http\Message\StreamInterface.
       // @see http://docs.guzzlephp.org/en/latest/psr7.html#body
       $data = $response->getBody()->getContents();
-      // Echo '<pre>';.
+      
+	  
       $decoded = (isset($data)) ? json_decode($data) : NULL;
-      $output = NULL;
-      if ($decoded) {
-        foreach ($decoded as $key => $val) {
-          $output .= '<div>title=' . $val->title . '</div>';
-          $output .= '<div>company=' . $val->company . '</div>';
-          $output .= '<div>location=' . $val->location . '</div>';
-          $output .= '<div>type=' . $val->type . '</div>';
-          $output .= '<div>created_at=' . $val->created_at . '</div>';
-        }
-      }
-
+	  Echo '<pre>';
+	  print_r($decoded);
+	  Echo '</pre>';
       return [
-        '#type' => 'markup',
-        '#markup' => $output,
+        '#theme' => 'gobear_jobs',
+        '#data' => $decoded,		
       ];
     }
     catch (RequestException $e) {
-      watchdog_exception('my_module', $e);
+      watchdog_exception('Gobearjobs', $e);
     }
   }
 

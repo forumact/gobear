@@ -1,0 +1,7 @@
+drupal.gobear_jobs:
+  version: VERSION
+  js:
+    js/gobear_jobs.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal

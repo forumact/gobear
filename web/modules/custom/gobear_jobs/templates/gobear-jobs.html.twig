@@ -1,1 +1,19 @@
-<!-- Add you custom twig html here -->
+{% for job in data %}
+	<div class="card card-align">
+	  <div class="card-body">
+		<h5 class="card-title gtitle">{{ job.title }}</h5>
+		<a href="{{job.url}}" target="_blank" class="btn btn-primary fright gobearbtn">{{ job.type|upper }}</a>
+		<div class="padding6">
+		 <a href="{{job.company_url}}"><img class="companylogo" src="{{job.company_logo}}"/></a>
+		 <a href="{{job.company_url}}">@ {{job.company}}</a> | <span>{{ job.location }}</span></div>
+		<div class="padding6"><span>Published {{ job.created_at }}</span> | <span>Tech team</span></div>
+		<a href="javascript:void('0');" class="toggle-desc"><span class="clicktext">More Info</span>></a>		
+		<div class="card-text padding6 hide long-desc">{{ job.description|raw }}</div>			
+		<div class="card-text padding6 less-info short-desc">
+		  {% set text = job.description|striptags  %}
+          {{ text|length > 200 ? text|slice(0, 200)|raw ~ '...' : text|raw }}
+		</div>
+	  </div>
+	</div>
+{% endfor %}
+
