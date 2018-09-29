@@ -16,7 +16,7 @@
    *   Attaches the behavior for the jobs listing.
    */
     Drupal.behaviors.Gobeaer = {
-        attach: function () {
+        attach: function (context) {
             $('body').once('Gobeaer').each(
                 function() {    
                     $('.toggle-desc').click(

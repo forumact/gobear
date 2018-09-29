@@ -1,0 +1,7 @@
+services:
+  gobear_jobs.twig.timesince:
+    class: Drupal\gobear_jobs\TwigExtension\TimeSinceExtension
+    arguments: ['@renderer']
+    tags:
+      - { name: twig.extension }
+
